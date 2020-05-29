@@ -99,6 +99,7 @@ class Interpreter{
     source_index=0;
     setinterval;
     runnning=false;
+    fps=10;
     bt=new BfTable(this.row,this.column,document.getElementById('bf_board'));
     constructor(){
         
@@ -245,10 +246,32 @@ class Interpreter{
         this.setinterval = setInterval(()=>{
             const fin = this.interpreter();
             if(fin===1){
-                console.log('finish!')
-                clearInterval(si);
+                this.finish();
             }
-        },100);
+        },1000/this.fps);
+    }
+    change_fps(num){
+        let p = Math.pow(10,num);
+        p = Math.floor(p);
+        //console.log(p);
+        this.fps=p;
+        document.getElementById('fps').innerHTML=p;
+        if(this.runnning){
+            clearInterval(this.setinterval);
+            this.run();
+        }
+    }
+    finish(){
+        console.log('finish!')
+        clearInterval(this.setinterval);
+        this.runnning=false;
+        this.fin_proc();
+    }
+    fin_proc(){
+        const run = document.getElementById('run');
+        const stop = document.getElementById('stop');
+        run.disabled=false;
+        stop.disabled=true;
     }
     resume(){
         this.run();
@@ -270,6 +293,7 @@ function main(){
     const bf_code = document.getElementById('bf_code');
     const stop = document.getElementById('stop');
     const step = document. getElementById('step');
+    const range = document.getElementById('range');
     const ip = new Interpreter();
     run.addEventListener('click',()=>{
         // bf_code
@@ -306,5 +330,9 @@ function main(){
         ip.interpreter();
         //stop.disabled=false;
     });
+    range.addEventListener('input',()=>{
+        //console.log(range.value);
+        ip.change_fps(Number(range.value));
+    });
 }
-//opt,stop,step,disable,run speed,warning,style,color clear,一つ目のbg color
+

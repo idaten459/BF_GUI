@@ -182,6 +182,9 @@ class Interpreter{
                     throw new Error(`ERROR: head move to negative and increment.`);
                 }
                 this.data[this.head]++;
+                if(this.data[this.head]>=256){
+                    this.data[this.head]=0;
+                }
                 this.bt.set_board(this.head,this.data[this.head]);
                 break;
             case '-':
@@ -189,6 +192,9 @@ class Interpreter{
                     throw new Error(`ERROR: head move to negative and decrement.`);
                 }
                 this.data[this.head]--;
+                if(this.data[this.head]<0){
+                    this.data[this.head]=255;
+                }
                 this.bt.set_board(this.head,this.data[this.head]);
                 break;
             case '>':
@@ -269,4 +275,4 @@ function main(){
         ip.run();
     });
 }
-//opt,stop,step,disable,run speed,warning,style
+//opt,stop,step,disable,run speed,warning,style,color clear,一つ目のbg color

@@ -97,6 +97,8 @@ class Interpreter{
     column=10;
     input_header=0;
     source_index=0;
+    setinterval;
+    runnning=false;
     bt=new BfTable(this.row,this.column,document.getElementById('bf_board'));
     constructor(){
         
@@ -110,7 +112,8 @@ class Interpreter{
         if(this.output){
             this.output.innerText='';
         }
-        
+        this.setinterval = null;
+        this.runnning=false;
     }
     set(bf_code,source,output,input){
         this.bf_html = bf_code;
@@ -238,7 +241,8 @@ class Interpreter{
         }
     }
     run(){
-        const si = setInterval(()=>{
+        this.runnning=true;
+        this.setinterval = setInterval(()=>{
             const fin = this.interpreter();
             if(fin===1){
                 console.log('finish!')
@@ -246,18 +250,28 @@ class Interpreter{
             }
         },100);
     }
+    resume(){
+        this.run();
+    }
+    stop(){
+        this.runnning=false;
+        clearInterval(this.setinterval);
+        //this.setinterval;
+    }
 }
 
 function main(){
     const output=document.getElementById('output');
     const input = document.getElementById('input');
     input.value='123';
-    const button = document.getElementById('button');
+    const run = document.getElementById('run');
     const source = document.getElementById('source');
     source.value=',.,.,.[-]++++++++[>++++++<-]>.[-]<';
     const bf_code = document.getElementById('bf_code');
+    const stop = document.getElementById('stop');
+    const step = document. getElementById('step');
     const ip = new Interpreter();
-    button.addEventListener('click',()=>{
+    run.addEventListener('click',()=>{
         // bf_code
         while(bf_code.firstChild){ // 子要素をすべて消去
             bf_code.removeChild(bf_code.firstChild);
@@ -273,6 +287,24 @@ function main(){
         ip.reset();
         ip.set(bf_code,source.value,output,input);
         ip.run();
+        stop.disabled=false;
+        run.disabled=true;
+    });
+    stop.addEventListener('click',()=>{
+        if(ip.runnning){
+            ip.stop();
+            run.disabled=false;
+            //stop.disabled=true;
+            step.disabled=false;
+        }else{
+            ip.resume();
+            stop.disabled=false;
+            run.disabled=true;
+        }
+    });
+    step.addEventListener('click',()=>{
+        ip.interpreter();
+        //stop.disabled=false;
     });
 }
 //opt,stop,step,disable,run speed,warning,style,color clear,一つ目のbg color

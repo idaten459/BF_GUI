@@ -1,9 +1,8 @@
-(()=>{
-    window.onload=()=>{
+(function () {
+    window.onload = function () {
         main();
     };
 })();
-
 /*
 警告を出すかどうか
 1. 左括弧が足りない、かつその左括弧が実行中にジャンプ対象にならない
@@ -13,134 +12,126 @@
 2. 左括弧が足りない、かつその左括弧が実行中にジャンプ対象になる
 3. 見ているヘッダが負のときにインクリメント、デクリメントを行う
 */
-const warning=false;
-
-function set_table(table, n, m, data){
-    table.rows[n].cells[m].firstChild.data=data;
+var warning = false;
+function set_table(table, n, m, data) {
+    table.rows[n].cells[m].firstChild.data = data;
 }
-function get_table(table, n, m){
+function get_table(table, n, m) {
     return table.rows[n].cells[m].firstChild.data;
 }
-
-class BfTable{
-    board; // bfの値を格納する二次元配列
-    html_table; // boardを表示するhtml node
-    disit_width=3;
-    constructor(row,column,html_table){
-        this.row=row;
-        this.column=column;
-        this.board=new Array(row);
-        for(let i=0;i<row;i++){
+var BfTable = /** @class */ (function () {
+    function BfTable(row, column, html_table) {
+        this.disit_width = 3;
+        this.row = row;
+        this.column = column;
+        this.board = new Array(row);
+        for (var i = 0; i < row; i++) {
             this.board[i] = new Array(column).fill(0);
         }
-        this.html_table=html_table;
+        this.html_table = html_table;
     }
-    reset(){
-        for(let i=0;i<this.row;i++){
+    BfTable.prototype.reset = function () {
+        for (var i = 0; i < this.row; i++) {
             this.board[i] = new Array(this.column).fill(0);
         }
-        for(let i=0;i<this.row*this.column;i++){
-            this.set_board(i,0);
+        for (var i = 0; i < this.row * this.column; i++) {
+            this.set_board(i, 0);
         }
-    }
-    set_board(index,data){ // boardにdataを設定
-        const rc=this.index_to_rc(index);
-        const n=rc[0];
-        const m=rc[1];
-        const padding_date=this.pad(data,this.disit_width);
+    };
+    BfTable.prototype.set_board = function (index, data) {
+        var rc = this.index_to_rc(index);
+        var n = rc[0];
+        var m = rc[1];
+        var padding_date = this.pad(data, this.disit_width);
         this.html_table.rows[n].cells[m].firstChild.data = padding_date;
         this.board[n][m] = data;
-    }
-    get_board(index){ //  boardのdataを取得
-        const rc=this.index_to_rc(index);
-        const n=rc[0];
-        const m=rc[1];
+    };
+    BfTable.prototype.get_board = function (index) {
+        var rc = this.index_to_rc(index);
+        var n = rc[0];
+        var m = rc[1];
         return this.html_table.rows[n].cells[m].firstChild.data;
-    }
-    ref(index){ // indexを表示に反映(bindするようになったら要らなくなる)
-        const rc=this.index_to_rc(index);
-        const n=rc[0];
-        const m=rc[1];
-        this.set_board(n,m,this.board[n][m]);
-    }
-    pad(num,d){ // num>=0をd桁で先頭0埋めする
-        const tmp = ('0'.repeat(d))+String(num);
-        const l=tmp.length;
-        const res = tmp.slice(l-d,l);
+    };
+    BfTable.prototype.ref = function (index) {
+        var rc = this.index_to_rc(index);
+        var n = rc[0];
+        var m = rc[1];
+        this.set_board(index, this.board[n][m]);
+    };
+    BfTable.prototype.pad = function (num, d) {
+        var tmp = ('0'.repeat(d)) + String(num);
+        var l = tmp.length;
+        var res = tmp.slice(l - d, l);
         return res;
+    };
+    BfTable.prototype.index_to_rc = function (index) {
+        var n = Math.floor(index / this.column);
+        var m = index % this.column;
+        return [n, m];
+    };
+    BfTable.prototype.color = function (index, color_code) {
+        var rc = this.index_to_rc(index);
+        var n = rc[0];
+        var m = rc[1];
+        this.html_table.rows[n].cells[m].style.backgroundColor = color_code;
+    };
+    return BfTable;
+}());
+var Interpreter = /** @class */ (function () {
+    function Interpreter() {
+        this.bracket = new Map(); // i番目の括弧に対応した括弧にindex
+        this.stack = new Array();
+        this.head = 0;
+        this.size = 30000;
+        this.data = new Array(this.size);
+        this.row = 3;
+        this.column = 10;
+        this.input_header = 0;
+        this.source_index = 0;
+        this.runnning = false;
+        this.fps = 10;
+        this.bt = new BfTable(this.row, this.column, document.getElementById('bf_board'));
     }
-    index_to_rc(index){
-        const n = Math.floor(index/this.column);
-        const m = index%this.column;
-        return [n,m];
-    }
-    color(index,color_code){
-        const rc=this.index_to_rc(index);
-        const n=rc[0];
-        const m=rc[1];
-        this.html_table.rows[n].cells[m].style.backgroundColor=color_code;
-    }
-}
-
-class Interpreter{
-    source;
-    bf_html;
-    bracket = new Map(); // i番目の括弧に対応した括弧にindex
-    stack = new Array();
-    head = 0;
-    size = 30000;
-    data = new Array(this.size);
-    output;
-    input;
-    input_str;
-    row=3;
-    column=10;
-    input_header=0;
-    source_index=0;
-    setinterval;
-    runnning=false;
-    bt=new BfTable(this.row,this.column,document.getElementById('bf_board'));
-    constructor(){
-        
-    }
-    reset(){
+    Interpreter.prototype.reset = function () {
         this.data.fill(0);
         this.bt.reset();
         this.head = 0;
-        this.input_header=0;
-        this.source_index=0;
-        if(this.output){
-            this.output.innerText='';
+        this.input_header = 0;
+        this.source_index = 0;
+        if (this.output) {
+            this.output.innerText = '';
         }
         this.setinterval = null;
-        this.runnning=false;
-    }
-    set(bf_code,source,output,input){
+        this.runnning = false;
+    };
+    Interpreter.prototype.set = function (bf_code, source, output, input) {
         this.bf_html = bf_code;
         this.source = source;
         this.output = output;
         this.input = input;
         this.init();
         this.data.fill(0);
-    }
-    init(){
+    };
+    Interpreter.prototype.init = function () {
         // source code
-        const n = this.source.length;
-        let cnt=0;
-        for(let i=0;i<n;i++){
+        var n = this.source.length;
+        var cnt = 0;
+        for (var i = 0; i < n; i++) {
             switch (this.source[i]) {
                 case '[':
                     this.stack.push(i);
                     break;
                 case ']':
-                    if(warning&this.stack.length===0){
-                        if(warning){
-                            throw new Error(`WARNING: '[' is not enough`);
-                        }else{
-                            this.bracket.set(i,null);
+                    if (warning && this.stack.length === 0) {
+                        if (warning) {
+                            throw new Error("WARNING: '[' is not enough");
                         }
-                    }else{
-                        const left_index = this.stack.pop();
+                        else {
+                            this.bracket.set(i, null);
+                        }
+                    }
+                    else {
+                        var left_index = this.stack.pop();
                         this.bracket.set(i, left_index);
                         this.bracket.set(left_index, i);
                     }
@@ -149,162 +140,193 @@ class Interpreter{
                     break;
             }
         }
-        if(this.stack.length!==0){
-            throw new Error(`ERROR: ']' is not enough`);
+        if (this.stack.length !== 0) {
+            throw new Error("ERROR: ']' is not enough");
         }
         // input
-        this.input_str = input.value;
-    }
-    color(index,color_code){
+        this.input_str = this.input.value;
+    };
+    Interpreter.prototype.color = function (index, color_code) {
         //この処理が重いO(|source|)
-        const qs = document.getElementsByClassName(`bf_code`);
-        if(qs.length>index){
-            qs[index].style.backgroundColor=color_code;
+        var qs = document.getElementsByClassName("bf_code");
+        var qse = Array.from(qs);
+        if (qse.length > index) {
+            qse[index].style.backgroundColor = color_code;
         }
-    }
-    proc_by_block(index){ // source[index]の処理を行う
+    };
+    Interpreter.prototype.proc_by_block = function (index) {
         switch (this.source[index]) {
             case '[':
-                if(this.data[this.head]===0){
-                    const right_index=this.bracket.get(index);
-                    if(!!right_index){
-                        this.source_index=right_index;//参照渡しがないので、これの仕様を要検討
+                if (this.data[this.head] === 0) {
+                    var right_index = this.bracket.get(index);
+                    if (!!right_index) {
+                        this.source_index = right_index; //参照渡しがないので、これの仕様を要検討
                     }
                 }
                 break;
             case ']':
-                if(this.data[this.head]!==0){
-                    const left_index=this.bracket.get(index);
-                    if(!!left_index){
-                        this.source_index=left_index;
+                if (this.data[this.head] !== 0) {
+                    var left_index = this.bracket.get(index);
+                    if (!!left_index) {
+                        this.source_index = left_index;
                     }
                 }
                 break;
             case '+':
-                if(this.head<0){
-                    throw new Error(`ERROR: head move to negative and increment.`);
+                if (this.head < 0) {
+                    throw new Error("ERROR: head move to negative and increment.");
                 }
                 this.data[this.head]++;
-                if(this.data[this.head]>=256){
-                    this.data[this.head]=0;
+                if (this.data[this.head] >= 256) {
+                    this.data[this.head] = 0;
                 }
-                this.bt.set_board(this.head,this.data[this.head]);
+                this.bt.set_board(this.head, this.data[this.head]);
                 break;
             case '-':
-                if(this.head<0){
-                    throw new Error(`ERROR: head move to negative and decrement.`);
+                if (this.head < 0) {
+                    throw new Error("ERROR: head move to negative and decrement.");
                 }
                 this.data[this.head]--;
-                if(this.data[this.head]<0){
-                    this.data[this.head]=255;
+                if (this.data[this.head] < 0) {
+                    this.data[this.head] = 255;
                 }
-                this.bt.set_board(this.head,this.data[this.head]);
+                this.bt.set_board(this.head, this.data[this.head]);
                 break;
             case '>':
-                this.bt.color(this.head,'#ffffff');
+                this.bt.color(this.head, '#ffffff');
                 this.head++;
-                this.bt.color(this.head,'#ffa000');
+                this.bt.color(this.head, '#ffa000');
                 break;
             case '<':
-                this.bt.color(this.head,'#ffffff');
+                this.bt.color(this.head, '#ffffff');
                 this.head--;
-                this.bt.color(this.head,'#ffa000');
-                if(warning&&this.head<0){
-                    throw new Error(`WARNING: head move to negative.`);
+                this.bt.color(this.head, '#ffa000');
+                if (warning && this.head < 0) {
+                    throw new Error("WARNING: head move to negative.");
                 }
                 break;
             case ',':
-                if(this.input_header<this.input_str.length){
-                    this.data[this.head]=this.input_str.charCodeAt(this.input_header++);
-                }else{
-                    this.data[this.head]=0;
+                if (this.input_header < this.input_str.length) {
+                    this.data[this.head] = this.input_str.charCodeAt(this.input_header++);
                 }
-                this.bt.set_board(this.head,this.data[this.head]);
+                else {
+                    this.data[this.head] = 0;
+                }
+                this.bt.set_board(this.head, this.data[this.head]);
                 break;
             case '.':
                 console.log(String.fromCharCode(this.data[this.head]));
-                this.output.innerText+=String.fromCharCode(this.data[this.head]);
+                this.output.innerText += String.fromCharCode(this.data[this.head]);
                 break;
             default:
                 break;
         }
-    }
-    interpreter(){
-        if(this.source_index<this.source.length){
-            this.color(this.source_index,'#ffffff');
+    };
+    Interpreter.prototype.interpreter = function () {
+        if (this.source_index < this.source.length) {
+            this.color(this.source_index, '#ffffff');
             this.proc_by_block(this.source_index);
             this.source_index++;
-            this.color(this.source_index,'#ffa000');
+            this.color(this.source_index, '#ffa000');
             return 0;
-        }else{
+        }
+        else {
             return 1;
         }
-    }
-    run(){
-        this.runnning=true;
-        this.setinterval = setInterval(()=>{
-            const fin = this.interpreter();
-            if(fin===1){
-                console.log('finish!')
-                clearInterval(si);
+    };
+    Interpreter.prototype.run = function () {
+        var _this = this;
+        this.runnning = true;
+        this.setinterval = setInterval(function () {
+            var fin = _this.interpreter();
+            if (fin === 1) {
+                _this.finish();
             }
-        },100);
-    }
-    resume(){
+        }, 1000 / this.fps);
+    };
+    Interpreter.prototype.change_fps = function (num) {
+        var p = Math.pow(10, num);
+        p = Math.floor(p);
+        //console.log(p);
+        this.fps = p;
+        document.getElementById('fps').innerHTML = String(p);
+        if (this.runnning) {
+            clearInterval(this.setinterval);
+            this.run();
+        }
+    };
+    Interpreter.prototype.finish = function () {
+        console.log('finish!');
+        clearInterval(this.setinterval);
+        this.runnning = false;
+        this.fin_proc();
+    };
+    Interpreter.prototype.fin_proc = function () {
+        var run = document.getElementById('run');
+        var stop = document.getElementById('stop');
+        run.disabled = false;
+        stop.disabled = true;
+    };
+    Interpreter.prototype.resume = function () {
         this.run();
-    }
-    stop(){
-        this.runnning=false;
+    };
+    Interpreter.prototype.stop = function () {
+        this.runnning = false;
         clearInterval(this.setinterval);
         //this.setinterval;
-    }
-}
-
-function main(){
-    const output=document.getElementById('output');
-    const input = document.getElementById('input');
-    input.value='123';
-    const run = document.getElementById('run');
-    const source = document.getElementById('source');
-    source.value=',.,.,.[-]++++++++[>++++++<-]>.[-]<';
-    const bf_code = document.getElementById('bf_code');
-    const stop = document.getElementById('stop');
-    const step = document. getElementById('step');
-    const ip = new Interpreter();
-    run.addEventListener('click',()=>{
+    };
+    return Interpreter;
+}());
+function main() {
+    var output = document.getElementById('output');
+    var input = document.getElementById('input');
+    input.value = '123';
+    var run = document.getElementById('run');
+    var source = document.getElementById('source');
+    source.value = ',.,.,.[-]++++++++[>++++++<-]>.[-]<';
+    var bf_code = document.getElementById('bf_code');
+    var stop = document.getElementById('stop');
+    var step = document.getElementById('step');
+    var range = document.getElementById('range');
+    var ip = new Interpreter();
+    run.addEventListener('click', function () {
         // bf_code
-        while(bf_code.firstChild){ // 子要素をすべて消去
+        while (bf_code.firstChild) {
             bf_code.removeChild(bf_code.firstChild);
         }
-        const n=source.value.length;
-        for(let i=0;i<n;i++){
-            const spn=document.createElement('span');
-            spn.setAttribute('class','bf_code');
-            spn.innerHTML=source.value[i];
+        var n = source.value.length;
+        for (var i = 0; i < n; i++) {
+            var spn = document.createElement('span');
+            spn.setAttribute('class', 'bf_code');
+            spn.innerHTML = source.value[i];
             bf_code.appendChild(spn);
         }
         // interpreter
         ip.reset();
-        ip.set(bf_code,source.value,output,input);
+        ip.set(bf_code, source.value, output, input);
         ip.run();
-        stop.disabled=false;
-        run.disabled=true;
+        stop.disabled = false;
+        run.disabled = true;
     });
-    stop.addEventListener('click',()=>{
-        if(ip.runnning){
+    stop.addEventListener('click', function () {
+        if (ip.runnning) {
             ip.stop();
-            run.disabled=false;
+            run.disabled = false;
             //stop.disabled=true;
-            step.disabled=false;
-        }else{
+            step.disabled = false;
+        }
+        else {
             ip.resume();
-            stop.disabled=false;
-            run.disabled=true;
+            stop.disabled = false;
+            run.disabled = true;
         }
     });
-    step.addEventListener('click',()=>{
+    step.addEventListener('click', function () {
         ip.interpreter();
         //stop.disabled=false;
     });
+    range.addEventListener('input', function () {
+        //console.log(range.value);
+        ip.change_fps(Number(range.value));
+    });
 }
-//opt,stop,step,disable,run speed,warning,style,color clear,一つ目のbg color

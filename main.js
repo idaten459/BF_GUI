@@ -80,16 +80,16 @@ var BfTable = /** @class */ (function () {
 var Interpreter = /** @class */ (function () {
     function Interpreter() {
         this.bracket = new Map(); // i番目の括弧に対応した括弧にindex
-        this.stack = new Array();
-        this.head = 0;
-        this.size = 30000;
-        this.data = new Array(this.size);
-        this.row = 3;
-        this.column = 10;
-        this.input_header = 0;
-        this.source_index = 0;
-        this.runnning = false;
-        this.fps = 10;
+        this.stack = new Array(); // 
+        this.head = 0; // bfのインタープリタのヘッドの位置
+        this.size = 30000; // bfのメモリサイズ
+        this.data = new Array(this.size); // bfのメモリ
+        this.row = 3; // メモリ表示の行数
+        this.column = 10; // メモリ表示の列数
+        this.input_header = 0; // 入力のヘッダ
+        this.source_index = 0; // bfコードの実行位置
+        this.runnning = false; // 実行中ならtrue
+        this.fps = 10; // step per second(実行の間隔)
         this.bt = new BfTable(this.row, this.column, document.getElementById('bf_board'));
     }
     Interpreter.prototype.reset = function () {
@@ -143,6 +143,8 @@ var Interpreter = /** @class */ (function () {
         if (this.stack.length !== 0) {
             throw new Error("ERROR: ']' is not enough");
         }
+        // color init
+        this.bt.color(0, '#ffa000');
         // input
         this.input_str = this.input.value;
     };

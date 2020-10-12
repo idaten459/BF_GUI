@@ -1,6 +1,7 @@
 (()=>{
     window.onload=()=>{
-        main();
+        console.log("b");
+        //main();
     };
 })();
 
@@ -23,7 +24,7 @@ function get_table(table, n, m){
 }
 
 class BfTable{
-    board; // bfの値を格納する二次元配列
+    board:Array<Array<number>>; // bfの値を格納する二次元配列
     html_table; // boardを表示するhtml node
     disit_width=3;
     row;
@@ -31,9 +32,9 @@ class BfTable{
     constructor(row,column,html_table){
         this.row=row;
         this.column=column;
-        this.board=new Array(row);
+        this.board=new Array<Array<number>>(row);
         for(let i=0;i<row;i++){
-            this.board[i] = new Array(column).fill(0);
+            this.board[i] = new Array<number>(column).fill(0);
         }
         this.html_table=html_table;
     }
@@ -85,23 +86,23 @@ class BfTable{
 }
 
 class Interpreter{
-    source;
-    bf_html;
-    bracket = new Map(); // i番目の括弧に対応した括弧にindex
-    stack = new Array();
-    head = 0;
-    size = 30000;
-    data = new Array(this.size);
-    output;
-    input;
-    input_str;
-    row=3;
-    column=10;
-    input_header=0;
-    source_index=0;
+    source:string;          // 入力されたbfのコード
+    bf_html:HTMLElement;    // bfが格納されているhtml element
+    bracket = new Map();    // i番目の括弧に対応した括弧にindex
+    stack = new Array();    // 
+    head:number = 0;        // bfのインタープリタのヘッドの位置
+    size:number = 30000;    // bfのメモリサイズ
+    data = new Array(this.size);    // bfのメモリ
+    output:HTMLElement;     // 出力先のhtml element
+    input:HTMLInputElement; // 入力先のhtml element
+    input_str:string;       // 入力文字列
+    row=13;                  // メモリ表示の行数
+    column=11;              // メモリ表示の列数
+    input_header=0;         // 入力のヘッダ
+    source_index=0;         // bfコードの実行位置
     setinterval;
-    runnning=false;
-    fps=10;
+    runnning=false;         // 実行中ならtrue
+    fps=10;                 // step per second(実行の間隔)
     bt=new BfTable(this.row,this.column,document.getElementById('bf_board'));
     constructor(){
         
@@ -155,6 +156,8 @@ class Interpreter{
         if(this.stack.length!==0){
             throw new Error(`ERROR: ']' is not enough`);
         }
+        // color init
+        this.bt.color(0,'#ffa000');
         // input
         this.input_str = this.input.value;
     }
@@ -229,6 +232,11 @@ class Interpreter{
                 console.log(String.fromCharCode(this.data[this.head]));
                 this.output.innerText+=String.fromCharCode(this.data[this.head]);
                 break;
+            case '@': // button関連がバグる
+                this.stop();
+                //run.disabled=false;
+                //step.disabled=false;
+                break;
             default:
                 break;
         }
@@ -287,6 +295,7 @@ class Interpreter{
 }
 
 function main(){
+    console.log("a");
     const output=document.getElementById('output');
     const input = document.getElementById('input') as HTMLInputElement;
     input.value='123';
@@ -298,6 +307,7 @@ function main(){
     const step = document. getElementById('step') as HTMLButtonElement;
     const range = document.getElementById('range') as HTMLInputElement;
     const ip = new Interpreter();
+    const printOutput = false;
     run.addEventListener('click',()=>{
         // bf_code
         while(bf_code.firstChild){ // 子要素をすべて消去
@@ -308,7 +318,10 @@ function main(){
             const spn=document.createElement('span');
             spn.setAttribute('class','bf_code');
             spn.innerHTML=source.value[i];
-            bf_code.appendChild(spn);
+            if(printOutput){
+                bf_code.appendChild(spn);
+            }
+            
         }
         // interpreter
         ip.reset();

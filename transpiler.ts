@@ -152,13 +152,26 @@ class Int{//10進数に分解して管理
         const res = move+init+assi+rest;
         return res;
     }
-    copy(position_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // 不採用
-        let req = mm.require(this.width+1);
+    copy_base(position_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // mem[to] = mem[from]
+        let req = mm.require(1);
         let restore = hm.getHead();
         let move = hm.move(position_from);
-        let copy1 =                     // 消失してしまった
-        mm.free(this.width+1);
-        
+        let copy1 = '[';
+        copy1 += hm.move(position_to);
+        copy1 += '+';
+        copy1 += hm.move(req);
+        copy1 += '+';
+        copy1 += hm.move(position_from);
+        copy1 += '-';
+        copy1 += ']';
+        //copy1 += '@';
+        let copy2 = hm.move(req);
+        copy2 += '[' + hm.move(position_from) + '+' + hm.move(req) + '-]';
+        let res = move + copy1 + copy2;
+        res += this.assign_literal_base(0,req,hm);
+        res += hm.move(restore);
+        mm.free(1);
+        return res;
     }
     assign_various(positoin_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to = from
         let restore = hm.getHead(); // 関数の開始時のhead位置
@@ -276,6 +289,39 @@ class Int{//10進数に分解して管理
         res += hm.move(pos_from);
         res += '-';
         res += ']';
+        res += hm.move(restore);
+        return res;
+    }
+    equal_base(pos_from:number,pos_to:number,pos_rslt:number,hm:HeadManager,mm:MemoryManager):string{ // pos_rslt=pos_to==pos_from
+        let res = '';
+        let restore = hm.getHead();
+        let req = mm.require(2);
+        res += this.assign_literal_base(1,pos_rslt,hm);
+        res += this.copy_base(pos_from,req,hm,mm);
+        res += this.copy_base(pos_to,req+1,hm,mm);
+        //res += '@';
+        res += hm.move(req) + '[' + hm.move(req+1) + '-' + hm.move(req) + '-]';
+        res += hm.move(req+1) + '[' + hm.move(pos_rslt) + '[-]'+ hm.move(req+1) + '[-]]';
+        res += this.assign_literal_base(0,req,hm);
+        res += this.assign_literal_base(0,req+1,hm);
+        res += hm.move(restore);
+        mm.free(2);
+        return res;
+    }
+    shift_right(position:number,hm:HeadManager,mm:MemoryManager):string{ //論理右シフト(10進数)
+        let res = '';
+        let restore = hm.getHead();
+        //let req = mm.require(1);
+        //res += this.assign_literal_base(1,req,hm);
+        //res += hm.move(position+1+this.width);
+        //res += this.copy_base(position+this.width,req,hm,mm);
+        for(let i=this.width-1;i>0;i--){
+            const pos = position+i;
+            res += hm.move(pos);
+            res += '[>+<-]';
+        }
+        //res += hm.move(req);
+        //res += '[' + hm.move(position+1) + '+' + hm.move(req) + '-]';
         res += hm.move(restore);
         return res;
     }
@@ -546,9 +592,76 @@ class SemanticAnalysis{
             case 'println':
                 res += this.semantic_println(st);
                 break;
+            case 'read':
+                res += this.semantic_read(st);
+                break;
             default:
                 throw new Error('semantic error.');
                 break;
+        }
+        return res;
+    }
+    semantic_read(st:SyntaxTree):string{
+        // 'read' IDENTIFIER
+        let res = '';
+        let restore = this.hm.getHead();
+        const id_val = st.children[1].value;
+        const id = this.vm.get(id_val);
+        if(id.typeName==='int'){
+            //とりあえず正整数と仮定する
+            res += this.int.assign_literal(0,this.result.position,this.hm); // resultを0初期化
+            // 入力が0,10,32のいずれかと等しい場合は、終了
+            const cnt_req = 7;
+            let req = this.mm.require(cnt_req);
+            //res += this.hm.move(req+3);
+            res += 'p';
+            res += this.int.assign_literal_base( 1,req+0,this.hm);
+            res += this.int.assign_literal_base( 0,req+1,this.hm);
+            res += this.int.assign_literal_base(10,req+2,this.hm);
+            res += this.int.assign_literal_base(32,req+3,this.hm);
+            res += this.hm.move(req);
+            for(let i=0;i<this.int.width;i++){
+                res += '[';
+                res += this.hm.move(this.result.position+1+i);
+                res += ',';
+                for(let j=0;j<3;j++){
+                    res += this.int.equal_base(this.result.position+1+i,req+j+1,req+4,this.hm,this.mm);
+                    res += this.hm.move(req+4);
+                    res += '[' + this.hm.move(req) + '[-]' + this.hm.move(this.result.position+1+i) + '[-]' + this.hm.move(req+4) + '[-]]';
+                }
+                res += this.int.store_base(req,req+5,this.hm);
+                res += this.hm.move(req);
+                res += ']'
+                res += this.int.store_base(req+5,req,this.hm);
+            }
+            //res += '@';
+            const rightmost = this.result.position+this.int.width;
+            res += this.int.assign_literal_base( 1,req+1,this.hm);
+            res += this.int.assign_literal_base( 0,req+2,this.hm);
+            //res += '@';
+            res += this.hm.move(req+1);
+            res += '[';
+            res += this.hm.move(rightmost);
+            res += '[' + this.hm.move(req+1) + '[-]' + this.int.store_base(rightmost,req,this.hm)+this.hm.move(rightmost)+']' + this.int.store_base(req,rightmost,this.hm);
+            res += this.hm.move(req+1);
+            res += '[' + this.int.shift_right(this.result.position,this.hm,this.mm) + this.int.store_base(req+1,req+2,this.hm) +']' + this.int.store_base(req+2,req+1,this.hm);
+            res += ']';
+            //res += this.hm.move(rightmost);
+            //res += '[' + this.hm.move(req+1) + '[-]' + this.hm.move(rightmost) + '[-]]'
+            //res += ']';
+            for(let i=0;i<this.int.width;i++){
+                let pos = this.result.position+1+i;
+                res += this.hm.move(pos);
+                res += '[' + this.int.sub_literal_base(48,pos,this.hm) + this.int.store_base(pos,req+6,this.hm) + ']' + this.int.store_base(req+6,pos,this.hm);
+            }
+            for(let i=0;i<cnt_req;i++){
+                res += this.int.assign_literal_base(0,req+i,this.hm);
+            }
+            res += this.int.assign_various(this.result.position,id.position,this.hm,this.mm);
+            res += this.hm.move(restore);
+            this.mm.free(cnt_req);
+        }else{
+            throw new Error('semantic error.');
         }
         return res;
     }
@@ -928,7 +1041,7 @@ class ParseAnalysis{
                 throw new Error(`'${le[this.index]}' is not aceptable as a variable name`);
             }
             let tmp = new SyntaxTree();
-            tmp.setType('declarator');
+            tmp.setType('IDENTIFIER');
             tmp.setValue(le[this.index]);
             res.children.push(tmp);
             this.index++;
@@ -1102,7 +1215,7 @@ class TranspileManager{
 function transpiler(){
     const tbsource = document.getElementById('tb') as HTMLTextAreaElement;
     tbsource.value=
-/**/
+/**
 `int a;
 int b;
 int c;
@@ -1114,7 +1227,7 @@ println c;
 `
 /*/
 `int a;
-a = 10;
+read a;
 `
 //*/
     const transpileButton = document.getElementById('transpile') as HTMLButtonElement;

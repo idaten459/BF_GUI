@@ -241,10 +241,90 @@ class Interpreter{
                 break;
         }
     }
+    proc_by_block_opt(index){
+        switch (this.source[index]) {
+            case '[':
+                if(this.data[this.head]===0){
+                    const right_index=this.bracket.get(index);
+                    if(!!right_index){
+                        this.source_index=right_index;//参照渡しがないので、これの仕様を要検討
+                    }
+                }
+                break;
+            case ']':
+                if(this.data[this.head]!==0){
+                    const left_index=this.bracket.get(index);
+                    if(!!left_index){
+                        this.source_index=left_index;
+                    }
+                }
+                break;
+            case '+':
+                if(this.head<0){
+                    throw new Error(`ERROR: head move to negative and increment.`);
+                }
+                this.data[this.head]++;
+                if(this.data[this.head]>=256){
+                    this.data[this.head]=0;
+                }
+                this.bt.set_board(this.head,this.data[this.head]);
+                break;
+            case '-':
+                if(this.head<0){
+                    throw new Error(`ERROR: head move to negative and decrement.`);
+                }
+                this.data[this.head]--;
+                if(this.data[this.head]<0){
+                    this.data[this.head]=255;
+                }
+                this.bt.set_board(this.head,this.data[this.head]);
+                break;
+            case '>':
+                this.bt.color(this.head,'#ffffff');
+                while(this.source[this.source_index++]==='>'){
+                    this.head++;
+                }
+                this.source_index-=2;
+                //this.head++;
+                this.bt.color(this.head,'#ffa000');
+                break;
+            case '<':
+                this.bt.color(this.head,'#ffffff');
+                while(this.source[this.source_index++]==='<'){
+                    this.head--;
+                }
+                this.source_index-=2;
+                //this.head--;
+                this.bt.color(this.head,'#ffa000');
+                if(warning&&this.head<0){
+                    throw new Error(`WARNING: head move to negative.`);
+                }
+                break;
+            case ',':
+                if(this.input_header<this.input_str.length){
+                    this.data[this.head]=this.input_str.charCodeAt(this.input_header++);
+                }else{
+                    this.data[this.head]=0;
+                }
+                this.bt.set_board(this.head,this.data[this.head]);
+                break;
+            case '.':
+                console.log(String.fromCharCode(this.data[this.head]));
+                this.output.innerText+=String.fromCharCode(this.data[this.head]);
+                break;
+            case '@': // button関連がバグる
+                this.stop();
+                //run.disabled=false;
+                //step.disabled=false;
+                break;
+            default:
+                break;
+        }
+    }
     interpreter(){
         if(this.source_index<this.source.length){
             this.color(this.source_index,'#ffffff');
-            this.proc_by_block(this.source_index);
+            this.proc_by_block_opt(this.source_index);
             this.source_index++;
             this.color(this.source_index,'#ffa000');
             return 0;

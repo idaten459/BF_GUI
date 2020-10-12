@@ -1,6 +1,7 @@
-(function () {
-    window.onload = function () {
-        main();
+(() => {
+    window.onload = () => {
+        console.log("b");
+        //main();
     };
 })();
 /*
@@ -12,87 +13,86 @@
 2. 左括弧が足りない、かつその左括弧が実行中にジャンプ対象になる
 3. 見ているヘッダが負のときにインクリメント、デクリメントを行う
 */
-var warning = false;
+const warning = false;
 function set_table(table, n, m, data) {
     table.rows[n].cells[m].firstChild.data = data;
 }
 function get_table(table, n, m) {
     return table.rows[n].cells[m].firstChild.data;
 }
-var BfTable = /** @class */ (function () {
-    function BfTable(row, column, html_table) {
+class BfTable {
+    constructor(row, column, html_table) {
         this.disit_width = 3;
         this.row = row;
         this.column = column;
         this.board = new Array(row);
-        for (var i = 0; i < row; i++) {
+        for (let i = 0; i < row; i++) {
             this.board[i] = new Array(column).fill(0);
         }
         this.html_table = html_table;
     }
-    BfTable.prototype.reset = function () {
-        for (var i = 0; i < this.row; i++) {
+    reset() {
+        for (let i = 0; i < this.row; i++) {
             this.board[i] = new Array(this.column).fill(0);
         }
-        for (var i = 0; i < this.row * this.column; i++) {
+        for (let i = 0; i < this.row * this.column; i++) {
             this.set_board(i, 0);
         }
-    };
-    BfTable.prototype.set_board = function (index, data) {
-        var rc = this.index_to_rc(index);
-        var n = rc[0];
-        var m = rc[1];
-        var padding_date = this.pad(data, this.disit_width);
+    }
+    set_board(index, data) {
+        const rc = this.index_to_rc(index);
+        const n = rc[0];
+        const m = rc[1];
+        const padding_date = this.pad(data, this.disit_width);
         this.html_table.rows[n].cells[m].firstChild.data = padding_date;
         this.board[n][m] = data;
-    };
-    BfTable.prototype.get_board = function (index) {
-        var rc = this.index_to_rc(index);
-        var n = rc[0];
-        var m = rc[1];
+    }
+    get_board(index) {
+        const rc = this.index_to_rc(index);
+        const n = rc[0];
+        const m = rc[1];
         return this.html_table.rows[n].cells[m].firstChild.data;
-    };
-    BfTable.prototype.ref = function (index) {
-        var rc = this.index_to_rc(index);
-        var n = rc[0];
-        var m = rc[1];
+    }
+    ref(index) {
+        const rc = this.index_to_rc(index);
+        const n = rc[0];
+        const m = rc[1];
         this.set_board(index, this.board[n][m]);
-    };
-    BfTable.prototype.pad = function (num, d) {
-        var tmp = ('0'.repeat(d)) + String(num);
-        var l = tmp.length;
-        var res = tmp.slice(l - d, l);
+    }
+    pad(num, d) {
+        const tmp = ('0'.repeat(d)) + String(num);
+        const l = tmp.length;
+        const res = tmp.slice(l - d, l);
         return res;
-    };
-    BfTable.prototype.index_to_rc = function (index) {
-        var n = Math.floor(index / this.column);
-        var m = index % this.column;
+    }
+    index_to_rc(index) {
+        const n = Math.floor(index / this.column);
+        const m = index % this.column;
         return [n, m];
-    };
-    BfTable.prototype.color = function (index, color_code) {
-        var rc = this.index_to_rc(index);
-        var n = rc[0];
-        var m = rc[1];
+    }
+    color(index, color_code) {
+        const rc = this.index_to_rc(index);
+        const n = rc[0];
+        const m = rc[1];
         this.html_table.rows[n].cells[m].style.backgroundColor = color_code;
-    };
-    return BfTable;
-}());
-var Interpreter = /** @class */ (function () {
-    function Interpreter() {
+    }
+}
+class Interpreter {
+    constructor() {
         this.bracket = new Map(); // i番目の括弧に対応した括弧にindex
         this.stack = new Array(); // 
         this.head = 0; // bfのインタープリタのヘッドの位置
         this.size = 30000; // bfのメモリサイズ
         this.data = new Array(this.size); // bfのメモリ
-        this.row = 3; // メモリ表示の行数
-        this.column = 10; // メモリ表示の列数
+        this.row = 13; // メモリ表示の行数
+        this.column = 11; // メモリ表示の列数
         this.input_header = 0; // 入力のヘッダ
         this.source_index = 0; // bfコードの実行位置
         this.runnning = false; // 実行中ならtrue
         this.fps = 10; // step per second(実行の間隔)
         this.bt = new BfTable(this.row, this.column, document.getElementById('bf_board'));
     }
-    Interpreter.prototype.reset = function () {
+    reset() {
         this.data.fill(0);
         this.bt.reset();
         this.head = 0;
@@ -103,20 +103,20 @@ var Interpreter = /** @class */ (function () {
         }
         this.setinterval = null;
         this.runnning = false;
-    };
-    Interpreter.prototype.set = function (bf_code, source, output, input) {
+    }
+    set(bf_code, source, output, input) {
         this.bf_html = bf_code;
         this.source = source;
         this.output = output;
         this.input = input;
         this.init();
         this.data.fill(0);
-    };
-    Interpreter.prototype.init = function () {
+    }
+    init() {
         // source code
-        var n = this.source.length;
-        var cnt = 0;
-        for (var i = 0; i < n; i++) {
+        const n = this.source.length;
+        let cnt = 0;
+        for (let i = 0; i < n; i++) {
             switch (this.source[i]) {
                 case '[':
                     this.stack.push(i);
@@ -124,14 +124,14 @@ var Interpreter = /** @class */ (function () {
                 case ']':
                     if (warning && this.stack.length === 0) {
                         if (warning) {
-                            throw new Error("WARNING: '[' is not enough");
+                            throw new Error(`WARNING: '[' is not enough`);
                         }
                         else {
                             this.bracket.set(i, null);
                         }
                     }
                     else {
-                        var left_index = this.stack.pop();
+                        const left_index = this.stack.pop();
                         this.bracket.set(i, left_index);
                         this.bracket.set(left_index, i);
                     }
@@ -141,26 +141,26 @@ var Interpreter = /** @class */ (function () {
             }
         }
         if (this.stack.length !== 0) {
-            throw new Error("ERROR: ']' is not enough");
+            throw new Error(`ERROR: ']' is not enough`);
         }
         // color init
         this.bt.color(0, '#ffa000');
         // input
         this.input_str = this.input.value;
-    };
-    Interpreter.prototype.color = function (index, color_code) {
+    }
+    color(index, color_code) {
         //この処理が重いO(|source|)
-        var qs = document.getElementsByClassName("bf_code");
-        var qse = Array.from(qs);
+        const qs = document.getElementsByClassName(`bf_code`);
+        const qse = Array.from(qs);
         if (qse.length > index) {
             qse[index].style.backgroundColor = color_code;
         }
-    };
-    Interpreter.prototype.proc_by_block = function (index) {
+    }
+    proc_by_block(index) {
         switch (this.source[index]) {
             case '[':
                 if (this.data[this.head] === 0) {
-                    var right_index = this.bracket.get(index);
+                    const right_index = this.bracket.get(index);
                     if (!!right_index) {
                         this.source_index = right_index; //参照渡しがないので、これの仕様を要検討
                     }
@@ -168,7 +168,7 @@ var Interpreter = /** @class */ (function () {
                 break;
             case ']':
                 if (this.data[this.head] !== 0) {
-                    var left_index = this.bracket.get(index);
+                    const left_index = this.bracket.get(index);
                     if (!!left_index) {
                         this.source_index = left_index;
                     }
@@ -176,7 +176,7 @@ var Interpreter = /** @class */ (function () {
                 break;
             case '+':
                 if (this.head < 0) {
-                    throw new Error("ERROR: head move to negative and increment.");
+                    throw new Error(`ERROR: head move to negative and increment.`);
                 }
                 this.data[this.head]++;
                 if (this.data[this.head] >= 256) {
@@ -186,7 +186,7 @@ var Interpreter = /** @class */ (function () {
                 break;
             case '-':
                 if (this.head < 0) {
-                    throw new Error("ERROR: head move to negative and decrement.");
+                    throw new Error(`ERROR: head move to negative and decrement.`);
                 }
                 this.data[this.head]--;
                 if (this.data[this.head] < 0) {
@@ -204,7 +204,7 @@ var Interpreter = /** @class */ (function () {
                 this.head--;
                 this.bt.color(this.head, '#ffa000');
                 if (warning && this.head < 0) {
-                    throw new Error("WARNING: head move to negative.");
+                    throw new Error(`WARNING: head move to negative.`);
                 }
                 break;
             case ',':
@@ -220,11 +220,16 @@ var Interpreter = /** @class */ (function () {
                 console.log(String.fromCharCode(this.data[this.head]));
                 this.output.innerText += String.fromCharCode(this.data[this.head]);
                 break;
+            case '@':// button関連がバグる
+                this.stop();
+                //run.disabled=false;
+                //step.disabled=false;
+                break;
             default:
                 break;
         }
-    };
-    Interpreter.prototype.interpreter = function () {
+    }
+    interpreter() {
         if (this.source_index < this.source.length) {
             this.color(this.source_index, '#ffffff');
             this.proc_by_block(this.source_index);
@@ -235,19 +240,18 @@ var Interpreter = /** @class */ (function () {
         else {
             return 1;
         }
-    };
-    Interpreter.prototype.run = function () {
-        var _this = this;
+    }
+    run() {
         this.runnning = true;
-        this.setinterval = setInterval(function () {
-            var fin = _this.interpreter();
+        this.setinterval = setInterval(() => {
+            const fin = this.interpreter();
             if (fin === 1) {
-                _this.finish();
+                this.finish();
             }
         }, 1000 / this.fps);
-    };
-    Interpreter.prototype.change_fps = function (num) {
-        var p = Math.pow(10, num);
+    }
+    change_fps(num) {
+        let p = Math.pow(10, num);
         p = Math.floor(p);
         //console.log(p);
         this.fps = p;
@@ -256,52 +260,55 @@ var Interpreter = /** @class */ (function () {
             clearInterval(this.setinterval);
             this.run();
         }
-    };
-    Interpreter.prototype.finish = function () {
+    }
+    finish() {
         console.log('finish!');
         clearInterval(this.setinterval);
         this.runnning = false;
         this.fin_proc();
-    };
-    Interpreter.prototype.fin_proc = function () {
-        var run = document.getElementById('run');
-        var stop = document.getElementById('stop');
+    }
+    fin_proc() {
+        const run = document.getElementById('run');
+        const stop = document.getElementById('stop');
         run.disabled = false;
         stop.disabled = true;
-    };
-    Interpreter.prototype.resume = function () {
+    }
+    resume() {
         this.run();
-    };
-    Interpreter.prototype.stop = function () {
+    }
+    stop() {
         this.runnning = false;
         clearInterval(this.setinterval);
         //this.setinterval;
-    };
-    return Interpreter;
-}());
+    }
+}
 function main() {
-    var output = document.getElementById('output');
-    var input = document.getElementById('input');
+    console.log("a");
+    const output = document.getElementById('output');
+    const input = document.getElementById('input');
     input.value = '123';
-    var run = document.getElementById('run');
-    var source = document.getElementById('source');
+    const run = document.getElementById('run');
+    const source = document.getElementById('source');
     source.value = ',.,.,.[-]++++++++[>++++++<-]>.[-]<';
-    var bf_code = document.getElementById('bf_code');
-    var stop = document.getElementById('stop');
-    var step = document.getElementById('step');
-    var range = document.getElementById('range');
-    var ip = new Interpreter();
-    run.addEventListener('click', function () {
+    const bf_code = document.getElementById('bf_code');
+    const stop = document.getElementById('stop');
+    const step = document.getElementById('step');
+    const range = document.getElementById('range');
+    const ip = new Interpreter();
+    const printOutput = false;
+    run.addEventListener('click', () => {
         // bf_code
         while (bf_code.firstChild) {
             bf_code.removeChild(bf_code.firstChild);
         }
-        var n = source.value.length;
-        for (var i = 0; i < n; i++) {
-            var spn = document.createElement('span');
+        const n = source.value.length;
+        for (let i = 0; i < n; i++) {
+            const spn = document.createElement('span');
             spn.setAttribute('class', 'bf_code');
             spn.innerHTML = source.value[i];
-            bf_code.appendChild(spn);
+            if (printOutput) {
+                bf_code.appendChild(spn);
+            }
         }
         // interpreter
         ip.reset();
@@ -310,7 +317,7 @@ function main() {
         stop.disabled = false;
         run.disabled = true;
     });
-    stop.addEventListener('click', function () {
+    stop.addEventListener('click', () => {
         if (ip.runnning) {
             ip.stop();
             run.disabled = false;
@@ -323,11 +330,11 @@ function main() {
             run.disabled = true;
         }
     });
-    step.addEventListener('click', function () {
+    step.addEventListener('click', () => {
         ip.interpreter();
         //stop.disabled=false;
     });
-    range.addEventListener('input', function () {
+    range.addEventListener('input', () => {
         //console.log(range.value);
         ip.change_fps(Number(range.value));
     });

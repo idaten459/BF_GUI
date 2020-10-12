@@ -1,6 +1,7 @@
 (()=>{
     window.onload=()=>{
-        main();
+        console.log("b");
+        //main();
     };
 })();
 
@@ -95,8 +96,8 @@ class Interpreter{
     output:HTMLElement;     // 出力先のhtml element
     input:HTMLInputElement; // 入力先のhtml element
     input_str:string;       // 入力文字列
-    row=3;                  // メモリ表示の行数
-    column=10;              // メモリ表示の列数
+    row=13;                  // メモリ表示の行数
+    column=11;              // メモリ表示の列数
     input_header=0;         // 入力のヘッダ
     source_index=0;         // bfコードの実行位置
     setinterval;
@@ -231,6 +232,11 @@ class Interpreter{
                 console.log(String.fromCharCode(this.data[this.head]));
                 this.output.innerText+=String.fromCharCode(this.data[this.head]);
                 break;
+            case '@': // button関連がバグる
+                this.stop();
+                //run.disabled=false;
+                //step.disabled=false;
+                break;
             default:
                 break;
         }
@@ -289,6 +295,7 @@ class Interpreter{
 }
 
 function main(){
+    console.log("a");
     const output=document.getElementById('output');
     const input = document.getElementById('input') as HTMLInputElement;
     input.value='123';
@@ -300,6 +307,7 @@ function main(){
     const step = document. getElementById('step') as HTMLButtonElement;
     const range = document.getElementById('range') as HTMLInputElement;
     const ip = new Interpreter();
+    const printOutput = false;
     run.addEventListener('click',()=>{
         // bf_code
         while(bf_code.firstChild){ // 子要素をすべて消去
@@ -310,7 +318,10 @@ function main(){
             const spn=document.createElement('span');
             spn.setAttribute('class','bf_code');
             spn.innerHTML=source.value[i];
-            bf_code.appendChild(spn);
+            if(printOutput){
+                bf_code.appendChild(spn);
+            }
+            
         }
         // interpreter
         ip.reset();

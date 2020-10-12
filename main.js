@@ -339,3 +339,4 @@ function main() {
         ip.change_fps(Number(range.value));
     });
 }
+//# sourceMappingURL=main.js.map

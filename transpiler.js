@@ -312,6 +312,12 @@ class Int {
             output += this.store_base(req3, req2, hm);
             //output += 'a';
         }
+        // 一度も出力してない場合'0'を出力
+        output += hm.move(req2);
+        output += '[';
+        output += this.print_char('0', hm, mm);
+        output += '[-]';
+        output += ']';
         res += minus + output;
         res += this.assign_literal_base(0, req1, hm);
         res += this.assign_literal_base(0, req2, hm);

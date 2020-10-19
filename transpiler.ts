@@ -173,6 +173,24 @@ class Int{//10進数に分解して管理
         mm.free(1);
         return res;
     }
+    less_equal_base(pos_from:number,pos_to:number,pos_rslt:number,hm:HeadManager,mm:MemoryManager){ // rslt = from <= to
+        let restore = hm.getHead();
+        let req_num = 3;
+        let req = mm.require(req_num);
+        let res = '';
+        res += this.assign_literal_base(0,pos_rslt,hm);
+        res += this.copy_base(pos_to,pos_rslt,hm,mm);
+        res += this.copy_base(pos_from,req+1,hm,mm);
+        res += this.copy_base(pos_to,req+2,hm,mm);
+        res += hm.move(req+2);
+        res += '[' + hm.move(req+1) + '-' + '[' + hm.move(pos_rslt) + '-' + hm.move(req+1) + this.store_base(req+1,req,hm) + ']' + this.store_base(req,req+1,hm) + hm.move(req+2) + '-' + ']';
+        for(let i=0;i<req_num;i++){
+            res += this.assign_literal_base(0,req+i,hm);
+        }
+        mm.free(req_num);
+        res += hm.move(restore);
+        return res;
+    }
     assign_various(positoin_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to = from
         let restore = hm.getHead(); // 関数の開始時のhead位置
         let to_init = ''; // toを初期化
@@ -183,14 +201,15 @@ class Int{//10進数に分解して管理
         //to_init += hm.move(position_to);
         //to_init += '[-]';
         let rest = hm.move(restore); // restoreの位置に復元
-        let av = this.add_various(positoin_from,position_to,hm,mm); // to += from
+        let av = this.non_carry_add_various(positoin_from,position_to,hm,mm); // to += from
         let res = to_init + rest + av; // to = 0, to+=from
         return res;
     }
-    add_various(positoin_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to += from
-        let req = mm.require(this.width+1); // fromを一時退避
+    non_carry_add_various(position_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to += from(繰り上がりがされないことが保証される)
+        let req = mm.require(this.width+1+2); // fromを一時退避+2個
+        const l = this.width + 1;
         let restore = hm.getHead();
-        let move = hm.move(positoin_from);
+        let move = hm.move(position_from);
         let copy = '';
         for(let i=0;i<this.width+1;i++){
             copy += '[';
@@ -198,17 +217,17 @@ class Int{//10進数に分解して管理
             copy += '+';
             copy += hm.move(req+i);
             copy += '+';
-            copy += hm.move(positoin_from+i);
+            copy += hm.move(position_from+i);
             copy += '-';
             copy += ']';
-            copy += hm.move(positoin_from+i+1);
+            copy += hm.move(position_from+i+1);
         }
         //ここまででtoと退避領域に移動
         let copy2 = '';
         copy2 += hm.move(req);
         for(let i=0;i<this.width+1;i++){
             copy2 += '[';
-            copy2 += hm.move(positoin_from+i);
+            copy2 += hm.move(position_from+i);
             copy2 += '+';
             copy2 += hm.move(req+i);
             copy2 += '-';
@@ -218,40 +237,196 @@ class Int{//10進数に分解して管理
         //ここまでで退避領域をfromに移動
         let rest = hm.move(restore);
         let res = move + copy　+ copy2 + rest;
-        mm.free(this.width+1);
+        mm.free(this.width+1+2);
         return res;
     }
-    sub_various(positoin_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to -= from
-        let req = mm.require(this.width+1); // fromを一時退避
+    add_various(position_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to += from (assume positive int)
+        let req = mm.require(this.width+1+2); // fromを一時退避+2個
+        const l = this.width + 1;
         let restore = hm.getHead();
-        let move = hm.move(positoin_from);
-        let copy = '';
+        let move = hm.move(position_from);
+        let add = '';
         for(let i=0;i<this.width+1;i++){
-            copy += '[';
-            copy += hm.move(position_to+i);
-            copy += '+';
-            copy += hm.move(req+i);
-            copy += '+';
-            copy += hm.move(positoin_from+i);
-            copy += '-';
-            copy += ']';
-            copy += hm.move(positoin_from+i+1);
+            add += '[';
+            add += hm.move(position_to+i);
+            add += '+';
+            add += hm.move(req+i);
+            add += '+';
+            add += hm.move(position_from+i);
+            add += '-';
+            add += ']';
+            add += hm.move(position_from+i+1);
         }
         //ここまででtoと退避領域に移動
-        let copy2 = '';
-        copy2 += hm.move(req);
+        let copy = '';
+        copy += hm.move(req);
         for(let i=0;i<this.width+1;i++){
-            copy2 += '[';
-            copy2 += hm.move(positoin_from+i);
-            copy2 += '-';
-            copy2 += hm.move(req+i);
-            copy2 += '-';
-            copy2 += ']';
-            copy2 += hm.move(req+i+1);
+            copy += '[';
+            copy += hm.move(position_from+i);
+            copy += '+';
+            copy += hm.move(req+i);
+            copy += '-';
+            copy += ']';
+            copy += hm.move(req+i+1);
         }
         //ここまでで退避領域をfromに移動
+        let carry = '';
+        carry += this.assign_literal_base(10,req+l,hm);
+        //for(let i=1;i<=this.width;i++){
+        for(let i=this.width;i>=1;i--){
+            //carry += '@';
+            carry += this.less_equal_base(req+l,position_to+i,req+l+1,hm,mm);
+            //carry += '@';
+            carry += hm.move(req+l+1);
+            carry += '[';
+            carry += this.sub_literal_base(10,position_to+i,hm);
+            carry += this.add_literal_base(1,position_to+i-1,hm);
+            carry += hm.move(req+l+1);
+            carry += '[-]';
+            carry += ']';
+        }
+        carry += this.assign_literal_base(0,req+l,hm);
+        carry += this.assign_literal_base(0,req+l+1,hm);
         let rest = hm.move(restore);
-        let res = move + copy　+ copy2 + rest;
+        let res = move + add　+ copy + carry + rest;
+        mm.free(this.width+1+2);
+        return res;
+    }
+    mul_various(position_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to *= from(1桁*1桁)
+        let req_num = (this.width+1)*2+3;
+        let req = mm.require(req_num); // fromとtoを一時退避
+        const l = (this.width+1)*2;
+        let restore = hm.getHead();
+        let move = hm.move(position_from);
+        //let copy = this.assign_various(position_from,req,hm,mm);
+        //copy += this.assign_various(position_to,req+(this.width+1),hm,mm);
+        
+        //ここまででtoとfromを退避領域に移動
+        let req2 = req+(this.width+1);
+        let mul = '@';
+        for (let i=0;i<this.width+1;i++){
+            mul += hm.move(position_to+i);
+            mul += '[';
+            mul += hm.move(req+i);
+            mul += '+'
+            mul += hm.move(position_to+i);
+            mul += '-]';
+        }
+
+        mul += '@';
+        for(let i=1;i<this.width+1;i++){
+            mul += hm.move(req+i);
+            mul += '[-';
+            mul += hm.move(position_from+i);
+            mul += '[-';
+            mul += hm.move(req2+i);
+            mul += '+';
+            mul += hm.move(position_from+i);
+            mul += ']';
+            mul += hm.move(req2+i);
+            mul += '[-';
+            mul += hm.move(position_to+this.width);
+            mul += '+';
+            mul += hm.move(position_from+i);
+            mul += '+';
+            mul += hm.move(req2+i);
+            mul += ']';
+            mul += hm.move(req+i);
+            mul += ']';
+        }
+
+
+        //ここまでで退避領域をfromに移動
+        let carry = '@';
+        carry += this.assign_literal_base(10,req+l,hm);
+        
+        //for(let i=1;i<=this.width;i++){
+        for(let i=this.width;i>=1;i--){
+            //carry += '@';
+            carry += this.assign_literal_base(1,req+l+2,hm);
+            carry += hm.move(req+l+2);
+            carry += '[-';
+            carry += this.less_equal_base(req+l,position_to+i,req+l+1,hm,mm);
+            //carry += '@';
+            carry += hm.move(req+l+1);
+            carry += '[';
+            carry += this.sub_literal_base(10,position_to+i,hm);
+            carry += this.add_literal_base(1,position_to+i-1,hm);
+            carry += this.assign_literal_base(1,req+l+2,hm);
+            carry += '@';
+            carry += hm.move(req+l+1);
+            carry += '[-]';
+            carry += ']';
+            carry += hm.move(req+l+2);
+            //carry += this.store_base(req+l+2,req+l+1,hm);
+            carry += ']';
+            //carry += this.store_base(req+l+1,req+l+2,hm);
+        }
+        carry += this.assign_literal_base(0,req+l,hm);
+        carry += this.assign_literal_base(0,req+l+1,hm);
+        let rest = hm.move(restore);
+        let res = move + mul + carry;
+        //mm.free(this.width+1+2);
+        for(let i=0;i<req_num;i++){
+            res += this.assign_literal_base(0,req+i,hm);
+        }
+        mm.free(req_num);
+        res += rest;
+        return res;
+    }
+    sub_various(positoin_from:number,position_to:number,hm:HeadManager,mm:MemoryManager){ // to -= from (assume positive int)
+        let req = mm.require(this.width+1+2); // fromを一時退避
+        let l = this.width + 1;
+        let restore = hm.getHead();
+        let move = hm.move(positoin_from);
+        let sub = '';
+        sub += '@';
+        for(let i=0;i<this.width+1;i++){
+            sub += '[';
+            sub += hm.move(position_to+i);
+            sub += '-';
+            sub += hm.move(req+i);
+            sub += '+';
+            sub += hm.move(positoin_from+i);
+            sub += '-';
+            sub += ']';
+            sub += hm.move(positoin_from+i+1);
+        }
+        //ここまででtoと退避領域に移動
+        let copy = '';
+        //copy += '@';
+        copy += hm.move(req);
+        for(let i=0;i<this.width+1;i++){
+            copy += '[';
+            copy += hm.move(positoin_from+i);
+            copy += '+';
+            copy += hm.move(req+i);
+            copy += '-';
+            copy += ']';
+            copy += hm.move(req+i+1);
+        }
+        //ここまでで退避領域をfromに移動
+        let borrow = '';
+        borrow += this.assign_literal_base(10,req+l,hm);
+        for(let i=this.width;i>=1;i--){
+            // toのi桁目が10以上なら(引いて負だとオーバーフローして10以上になる)req+l+1が1
+            borrow += this.less_equal_base(req+l,position_to+i,req+l+1,hm,mm);
+            // req+l+1に移動
+            borrow += hm.move(req+l+1);
+            // req+l+1が1なら
+            borrow += '[';
+            // toのi桁目に10を足して、i+1桁目から1を引く
+            //borrow += '@';
+            borrow += this.add_literal_base(10,position_to+i,hm);
+            borrow += this.sub_literal_base(1,position_to+i-1,hm);
+            borrow += hm.move(req+l+1);
+            borrow += '[-]';
+            borrow += ']';
+        }
+        borrow += this.assign_literal_base(0,req+l,hm);
+        borrow += this.assign_literal_base(0,req+l+1,hm);
+        let rest = hm.move(restore);
+        let res = move + sub　+ copy + borrow + rest;
         mm.free(this.width+1);
         return res;
     }
@@ -288,6 +463,19 @@ class Int{//10進数に分解して管理
         res += '+';
         res += hm.move(pos_from);
         res += '-';
+        res += ']';
+        res += hm.move(restore);
+        return res;
+    }
+    store_base2(pos_from:number,pos_to:number,hm:HeadManager):string{ // pos_toからpos_fromへ退避(1セル,破壊的),pos_to=pos_from,pos_from=0
+        let res = '';
+        let restore = hm.getHead();
+        res += hm.move(pos_from);
+        res += '[';
+        res += hm.move(pos_to);
+        res += '-';
+        res += hm.move(pos_from);
+        res += '+';
         res += ']';
         res += hm.move(restore);
         return res;
@@ -614,7 +802,7 @@ class SemanticAnalysis{
             const cnt_req = 7;
             let req = this.mm.require(cnt_req);
             //res += this.hm.move(req+3);
-            res += 'p';
+            //res += 'p';
             res += this.int.assign_literal_base( 1,req+0,this.hm);
             res += this.int.assign_literal_base( 0,req+1,this.hm);
             res += this.int.assign_literal_base(10,req+2,this.hm);
@@ -747,8 +935,26 @@ class SemanticAnalysis{
                     res += this.int.sub_various(this.tmp.position,this.result.position,this.hm,this.mm); // result -= tmp
                     res += this.sm.push(this.result);
                     break;
-                case '*':
+                case '*':{
+                    if(st.children[0].type==='exp'){
+                        res += this.semantic_exp(st.children[0]);
+                    }else if(st.children[0].type==='primary'){
+                        res += this.semantic_primary(st.children[0]);
+                    }
+                    if(st.children[2].type==='exp'){
+                        res += this.semantic_exp(st.children[2]);
+                    }else if(st.children[2].type==='primary'){
+                        res += this.semantic_primary(st.children[2]);
+                    }else{
+                        throw new Error('semantic error.');
+                    }
+                    res += this.sm.pop();   // rightの結果を*resultに格納
+                    res += this.int.assign_various(this.result.position,this.tmp.position,this.hm,this.mm); // tmp = result
+                    res += this.sm.pop();   // leftの結果を*resultに格納
+                    res += this.int.mul_various(this.tmp.position,this.result.position,this.hm,this.mm); // result *= tmp
+                    res += this.sm.push(this.result);
                     break;
+                }
                 case '/':
                     break;
                 case '<':
@@ -1113,6 +1319,7 @@ class ParseAnalysis{
             res.children.push(this.parse('exp',le));
         }else if(this.isEXP(le[this.index])){
             // exp\{primary} binary_operator exp
+            this.index++;
             res.children.push(this.parse('exp',le));
             this.index++;
             if(!this.is_binary_operator(le[this.index])){
@@ -1226,8 +1433,7 @@ c = a + b;
 println c;
 `
 /*/
-`int a;
-read a;
+`println 15 - 2;
 `
 //*/
     const transpileButton = document.getElementById('transpile') as HTMLButtonElement;
@@ -1238,8 +1444,7 @@ read a;
         //tb_output.innerText=tm.run();
         const source = document.getElementById('source') as HTMLInputElement;
         source.value = tm.run();
-        tm.vm.vars.forEach(v=>{
-            console.log(v);
-        });
+        //source.value = '+>++';
+        //source.value += new Int().less_base(0,1,2,tm.hm,tm.mm);
     });
 }

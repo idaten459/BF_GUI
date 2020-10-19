@@ -164,10 +164,10 @@ class Interpreter{
     color(index,color_code){
         //この処理が重いO(|source|)
         const qs = document.getElementsByClassName(`bf_code`);
-        const qse = Array.from(qs) as HTMLElement[];
-        if(qse.length>index){
-            qse[index].style.backgroundColor=color_code;
-        }
+        //const qse = Array.from(qs) as HTMLElement[];
+        //if(qse.length>index){
+        //    qse[index].style.backgroundColor=color_code;
+        //}
     }
     proc_by_block(index){ // source[index]の処理を行う
         switch (this.source[index]) {
@@ -382,7 +382,7 @@ function main(){
     const run = document.getElementById('run') as HTMLButtonElement;
     const source = document.getElementById('source') as HTMLInputElement;
     source.value=',.,.,.[-]++++++++[>++++++<-]>.[-]<';
-    const bf_code = document.getElementById('bf_code');
+    const bf_code = document.getElementById('bf_code') as HTMLDivElement;
     const stop = document.getElementById('stop') as HTMLButtonElement;
     const step = document. getElementById('step') as HTMLButtonElement;
     const range = document.getElementById('range') as HTMLInputElement;
@@ -393,6 +393,7 @@ function main(){
         while(bf_code.firstChild){ // 子要素をすべて消去
             bf_code.removeChild(bf_code.firstChild);
         }
+        /*
         const n=source.value.length;
         for(let i=0;i<n;i++){
             const spn=document.createElement('span');
@@ -402,7 +403,8 @@ function main(){
                 bf_code.appendChild(spn);
             }
             
-        }
+        }*/
+        bf_code.innerHTML = source.value;
         // interpreter
         ip.reset();
         ip.set(bf_code,source.value,output,input);

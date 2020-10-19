@@ -376,21 +376,24 @@ function main() {
     const step = document.getElementById('step');
     const range = document.getElementById('range');
     const ip = new Interpreter();
-    const printOutput = false;
+    const printOutput = true;
     run.addEventListener('click', () => {
         // bf_code
         while (bf_code.firstChild) {
             bf_code.removeChild(bf_code.firstChild);
         }
-        const n = source.value.length;
-        for (let i = 0; i < n; i++) {
-            const spn = document.createElement('span');
-            spn.setAttribute('class', 'bf_code');
-            spn.innerHTML = source.value[i];
-            if (printOutput) {
+        /*
+        const n=source.value.length;
+        for(let i=0;i<n;i++){
+            const spn=document.createElement('span');
+            spn.setAttribute('class','bf_code');
+            spn.innerHTML=source.value[i];
+            if(printOutput){
                 bf_code.appendChild(spn);
             }
-        }
+            
+        }*/
+        bf_code.innerHTML = source.value;
         // interpreter
         ip.reset();
         ip.set(bf_code, source.value, output, input);

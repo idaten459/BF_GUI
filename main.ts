@@ -97,7 +97,7 @@ class Interpreter{
     input:HTMLInputElement; // 入力先のhtml element
     input_str:string;       // 入力文字列
     row=13;                  // メモリ表示の行数
-    column=11;              // メモリ表示の列数
+    column=12;              // メモリ表示の列数
     input_header=0;         // 入力のヘッダ
     source_index=0;         // bfコードの実行位置
     setinterval;
@@ -164,10 +164,10 @@ class Interpreter{
     color(index,color_code){
         //この処理が重いO(|source|)
         const qs = document.getElementsByClassName(`bf_code`);
-        //const qse = Array.from(qs) as HTMLElement[];
-        //if(qse.length>index){
-        //    qse[index].style.backgroundColor=color_code;
-        //}
+        const qse = Array.from(qs) as HTMLElement[];
+        if(qse.length>index){
+            qse[index].style.backgroundColor=color_code;
+        }
     }
     proc_by_block(index){ // source[index]の処理を行う
         switch (this.source[index]) {
@@ -387,13 +387,13 @@ function main(){
     const step = document. getElementById('step') as HTMLButtonElement;
     const range = document.getElementById('range') as HTMLInputElement;
     const ip = new Interpreter();
-    const printOutput = false;
+    const printOutput = true;
     run.addEventListener('click',()=>{
         // bf_code
         while(bf_code.firstChild){ // 子要素をすべて消去
             bf_code.removeChild(bf_code.firstChild);
         }
-        /*
+        //*
         const n=source.value.length;
         for(let i=0;i<n;i++){
             const spn=document.createElement('span');
@@ -402,9 +402,9 @@ function main(){
             if(printOutput){
                 bf_code.appendChild(spn);
             }
-            
-        }*/
-        bf_code.innerHTML = source.value;
+        }
+        //*/
+        //bf_code.innerHTML = source.value;
         // interpreter
         ip.reset();
         ip.set(bf_code,source.value,output,input);

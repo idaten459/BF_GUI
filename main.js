@@ -85,7 +85,7 @@ class Interpreter {
         this.size = 30000; // bfのメモリサイズ
         this.data = new Array(this.size); // bfのメモリ
         this.row = 13; // メモリ表示の行数
-        this.column = 11; // メモリ表示の列数
+        this.column = 12; // メモリ表示の列数
         this.input_header = 0; // 入力のヘッダ
         this.source_index = 0; // bfコードの実行位置
         this.runnning = false; // 実行中ならtrue
@@ -382,18 +382,18 @@ function main() {
         while (bf_code.firstChild) {
             bf_code.removeChild(bf_code.firstChild);
         }
-        /*
-        const n=source.value.length;
-        for(let i=0;i<n;i++){
-            const spn=document.createElement('span');
-            spn.setAttribute('class','bf_code');
-            spn.innerHTML=source.value[i];
-            if(printOutput){
+        //*
+        const n = source.value.length;
+        for (let i = 0; i < n; i++) {
+            const spn = document.createElement('span');
+            spn.setAttribute('class', 'bf_code');
+            spn.innerHTML = source.value[i];
+            if (printOutput) {
                 bf_code.appendChild(spn);
             }
-            
-        }*/
-        bf_code.innerHTML = source.value;
+        }
+        //*/
+        //bf_code.innerHTML = source.value;
         // interpreter
         ip.reset();
         ip.set(bf_code, source.value, output, input);
